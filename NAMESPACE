@@ -1,0 +1,5 @@
+# Load the shared object
+useDynLib(MultiChIPmixHMM)
+
+# Export all names
+exportPattern(".")
