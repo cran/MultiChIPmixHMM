@@ -33,21 +33,21 @@
 
 .EMmultiChIPmix<-function(data,nb.samples,proba,intercept,slope,sd,stop.crit=1e-8,max.iter=1000)
  {
-    variance<-numeric(nb.samples)
-    eps.tau<-1e-16
-    slope0<-slope*95/100
-    slope1<-slope*105/100
-    INPUT<-data[,grep("INPUT",names(data))]    
-    IP<-data[,grep("IP",names(data))]
-    IP=as.matrix(IP)
-    INPUT = as.matrix(INPUT)
-    intercept0<-apply(IP,2,mean,na.rm=TRUE)-slope0*apply(INPUT,2,mean,na.rm=TRUE)
-    intercept1<-apply(IP,2,mean,na.rm=TRUE)-slope1*apply(INPUT,2,mean,na.rm=TRUE)
-    difference<-2*stop.crit
-    iter<-0
-    while( (difference > stop.crit) & (iter < max.iter) )
-    {
-      iter<-iter+1
+   variance<-numeric(nb.samples)
+   eps.tau<-1e-16
+   slope0<-slope*95/100
+   slope1<-slope*105/100
+   INPUT<-data[,grep("INPUT",names(data))]    
+   IP<-data[,grep("IP",names(data))]
+   IP=as.matrix(IP)
+   INPUT = as.matrix(INPUT)
+   intercept0<-apply(IP,2,mean,na.rm=TRUE)-slope0*apply(INPUT,2,mean,na.rm=TRUE)
+   intercept1<-apply(IP,2,mean,na.rm=TRUE)-slope1*apply(INPUT,2,mean,na.rm=TRUE)
+   difference<-2*stop.crit
+   iter<-0
+   while( (difference > stop.crit) & (iter < max.iter) )
+     {
+       iter<-iter+1
       old.parameters<-c(pi=proba,intercept0=intercept0,intercept1=intercept1,slope0=slope0,slope1=slope1,standard.error=sd)
 
       tau0<-rep((1-proba),nrow(data))
@@ -128,79 +128,69 @@
     intercept1<-apply(IP,2,mean,na.rm=TRUE)-slope1*apply(INPUT,2,mean,na.rm=TRUE)
     difference<-2*stop.crit
     iter<-0
-
+#initialisation of  tau
+#    tau0<-rep((1-proba),nrow(data))
+#    tau1<-rep(proba,nrow(data))
+#    tau = cbind(tau0,tau1)
+#initialisation of transition matrix
+    Mat.trans.norm = matrix(0.5,nrow=2,ncol=2)
+  
+#initialisation of stationnary distribution
+    val.propre = round(eigen(t(Mat.trans.norm))$values,3)
+    pos = which(val.propre == 1.000)
+    muHMM = eigen(t(Mat.trans.norm))$vectors[,pos]
+    muHMM = muHMM / sum(muHMM)
+    muHMM = as.numeric(muHMM)
+    
+        
     while( (difference > stop.crit) & (iter < max.iter) )
     {
       iter<-iter+1
       old.parameters<-c(pi=proba,intercept0=intercept0,intercept1=intercept1,slope0=slope0,slope1=slope1,standard.error=sd)
-      tau0<-rep((1-proba),nrow(data))
-      tau1<-rep(proba,nrow(data))
-      tau = cbind(tau0,tau1)
 
-#initialisation of transition matrix
-Mat.trans.norm = matrix(nrow=2,ncol=2)
-ti1=tau[-n,]
-ti2=tau[-1,]
-Mat.trans=t(ti1)%*%ti2
-Mat.trans.norm = Mat.trans/rowSums(Mat.trans)
-
-#initialisation of stationnary distribution
-val.propre = round(eigen(t(Mat.trans.norm))$values,3)
-pos = which(val.propre == 1.000)
-muHMM = eigen(t(Mat.trans.norm))$vectors[,pos]
-muHMM = muHMM / sum(muHMM)
-muHMM = as.numeric(muHMM)
-
-###initialisation of phi###
-Phi = matrix(rep(1,n),nrow=n,ncol=2)
-
-
-for (b in 1:nb.samples)
-  {
-    mean.param1<-intercept0[b]+slope0[b]*INPUT[,b]
-    mean.param2<-intercept1[b]+slope1[b]*INPUT[,b]
-    
-    #Calcul de Phi
-    Phi[,1] = Phi[,1]*dnorm(IP[,b],mean=mean.param1,sd=sd[b])
-    Phi[,2] = Phi[,2]*dnorm(IP[,b],mean=mean.param2,sd=sd[b])
-  }
-
+ #Calcul de Phi
+      for (b in 1:nb.samples)
+        {
+          mean.param1<-intercept0[b]+slope0[b]*INPUT[,b]
+          mean.param2<-intercept1[b]+slope1[b]*INPUT[,b]
+          
+          Phi = matrix(rep(1,n),nrow=n,ncol=2)
+          Phi[,1] = Phi[,1]*dnorm(IP[,b],mean=mean.param1,sd=sd[b])
+          Phi[,2] = Phi[,2]*dnorm(IP[,b],mean=mean.param2,sd=sd[b])
+        }
+     
 ### Forward-Backward algorithm ###
  
-Phi.vect = c(Phi[,1],Phi[,2])
-Mat.trans.norm.vect = c(Mat.trans.norm[,1],Mat.trans.norm[,2])
+      Phi.vect = c(Phi[,1],Phi[,2])
+  
+      Mat.trans.norm.vect = c(Mat.trans.norm[,1],Mat.trans.norm[,2])
+      resF = .ForwardR(Phi.vect,muHMM,Mat.trans.norm.vect,n)
+      resB = .BackwardR(resF$F,Mat.trans.norm.vect,n)
 
-resF = .ForwardR(Phi.vect,muHMM,Mat.trans.norm.vect,n)
-
-resB = .BackwardR(resF$F,Mat.trans.norm.vect,n)
-
-tau = matrix(resB$tau,nrow=n,ncol=2,byrow=FALSE) 
-F = matrix(c(resF$F),nrow=n,ncol=2)
-G = matrix(c(resB$G),nrow=n,ncol=2)
-
-#Update the transition matrix
-Mat.trans = Mat.trans.norm * (t(F[-n,])%*% (tau[-1,] / G[-1,]))
-Mat.trans.norm = Mat.trans/rowSums(Mat.trans)
-
-
-#Update the stationnary distribution 
-val.propre = round(eigen(t(Mat.trans.norm))$values,3)
-pos = which(val.propre == 1.000)
-muHMM = eigen(t(Mat.trans.norm))$vectors[,pos]
-muHMM = muHMM / sum(muHMM)
-muHMM = as.numeric(muHMM)
-     
-
-    # smoothing
+      tau = matrix(resB$tau,nrow=n,ncol=2,byrow=FALSE) 
+      F = matrix(c(resF$F),nrow=n,ncol=2)
+      G = matrix(c(resB$G),nrow=n,ncol=2)
+         # smoothing
       tau[,2]<-apply(cbind(tau[,2],eps.tau),1,max)
       tau[,2]<-apply(cbind(tau[,2],1-eps.tau),1,min)
-      tau[,1] = 1 - tau[,2]
-
- 
-     tau = tau[,2]
+      tau[,1] = 1-tau[,2]
+    ##################################### M step
+#Update the transition matrix
+      Mat.trans = Mat.trans.norm * (t(F[-n,])%*% (tau[-1,] / G[-1,]))
+      Mat.trans.norm = Mat.trans/rowSums(Mat.trans)
+       
+#Update the stationnary distribution 
+      val.propre = round(eigen(t(Mat.trans.norm))$values,3)
+      pos = which(val.propre == 1.000)
+      muHMM = eigen(t(Mat.trans.norm))$vectors[,pos]
+      muHMM = muHMM / sum(muHMM)
+      muHMM = as.numeric(muHMM)
       
-    # M step
+     
+      tau<-tau[,2]
+     
       proba<-mean(tau)
+  
       wt.INPUT.0<-apply((1-tau)*INPUT/sum(1-tau),2,sum)
       wt.IP.0<-apply((1-tau)*IP/sum(1-tau),2,sum)
       wt.INPUT.1<-apply(tau*INPUT/sum(tau),2,sum)
@@ -222,12 +212,16 @@ muHMM = as.numeric(muHMM)
           error1<-tau%*%((IP[,b]-intercept1[b]-slope1[b]*INPUT[,b])^2)
           sd[b]<-sqrt((error0+error1)/nrow(data))
         }
+     
+     
       
       relative.diff<-(old.parameters-c(proba,intercept0,intercept1,slope0,slope1,sd))/old.parameters
       difference<-max(abs(relative.diff))
+     
       cat("iteration number : ",iter,"\n")
       cat("parameters : ",c(proba,intercept0,intercept1,slope0,slope1,sd),"\n")
       cat("max of relative difference : ", difference,"\n")
+      print(cbind(old.parameters,c(proba,intercept0,intercept1,slope0,slope1,sd)))
     }
     a<-rbind(intercept0,intercept1)
     slope<-rbind(slope0,slope1)
@@ -237,6 +231,7 @@ muHMM = as.numeric(muHMM)
     names(standard.error)<-paste("replicat",1:nb.samples,sep=".")
 
     out<-list(proba.pi=proba,a=a,slope=slope,standard.error=sd,tau=tau)
+
 }
 
 
