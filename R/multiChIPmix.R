@@ -1,4 +1,4 @@
-multiChIPmix<-function(files=c("data1.txt","data2.txt"),init.by.PCA=TRUE,alpha=0.01,proba=0.5,save=TRUE,fileOUT="multiChIPmix-results.txt",fileOUTgraph="multiChIPmix-results.pdf")
+multiChIPmix<-function(files=c("data1.txt","data2.txt"),init.by.PCA=TRUE,alpha=0.01,FDRBH=FALSE,proba=0.5,save=TRUE,fileOUT="multiChIPmix-results.txt",fileOUTgraph="multiChIPmix-results.pdf")
   {
 
      # data reading
@@ -189,12 +189,19 @@ multiChIPmix<-function(files=c("data1.txt","data2.txt"),init.by.PCA=TRUE,alpha=0
         print(out2$proba.pi)
         cat("\n")
         
-	## Pvalue
-	FDR.BH<-p.adjust(posterior.proba,"BH")
-	status=as.numeric(FDR.BH<=alpha)
+	if (FDRBH==TRUE)
+	{
+		## Pvalue
+		FDR.BH<-p.adjust(posterior.proba,"BH")
+		status=as.numeric(FDR.BH<=alpha)
  	
-        results<-data.frame(data,tau,fp.risk=posterior.proba, FDR.BH, status)
-        if(save)
+ 	       results<-data.frame(data,tau,fp.risk=posterior.proba, FDR.BH, status)
+	} else {
+	    status=as.numeric(tau>=1-alpha)
+	    results<-data.frame(data,tau,status)	
+	}
+
+	       if(save)
           {
             cat("data results are saved in the file", fileOUT,"\n")
             write.table(results,file=fileOUT,row.names=FALSE,sep="\t")

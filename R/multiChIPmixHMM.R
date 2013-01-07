@@ -1,4 +1,4 @@
-multiChIPmixHMM<-function(files=c("data1.txt","data2.txt"),init.by.PCA=TRUE,proba=0.5,save=TRUE,fileOUT="multiChIPmix-results.txt",fileOUTgraph="multiChIPmix-results.pdf")
+multiChIPmixHMM<-function(files=c("data1.txt","data2.txt"),init.by.PCA=TRUE,alpha=0.01,proba=0.5,save=TRUE,fileOUT="multiChIPmix-results.txt",fileOUTgraph="multiChIPmix-results.pdf")
   {
 
     # data reading
@@ -189,7 +189,7 @@ multiChIPmixHMM<-function(files=c("data1.txt","data2.txt"),init.by.PCA=TRUE,prob
 
 	tau=exp(log.tau)
 	status=0*numeric(length(tau));
-        index<-which(tau-0.5>=0)
+        index<-which(tau>=1-alpha)
         status[index]<-1
         results<-data.frame(data,tau,status)
         if(save)

@@ -221,7 +221,7 @@
       cat("iteration number : ",iter,"\n")
       cat("parameters : ",c(proba,intercept0,intercept1,slope0,slope1,sd),"\n")
       cat("max of relative difference : ", difference,"\n")
-      print(cbind(old.parameters,c(proba,intercept0,intercept1,slope0,slope1,sd)))
+      
     }
     a<-rbind(intercept0,intercept1)
     slope<-rbind(slope0,slope1)

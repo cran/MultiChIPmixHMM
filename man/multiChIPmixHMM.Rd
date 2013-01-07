@@ -13,15 +13,16 @@
 }
 
 \usage{
-multiChIPmixHMM(files=c("data1.txt","data2.txt"),init.by.PCA=TRUE,proba=0.5,save=TRUE,fileOUT="multiChIPmix-results.txt",fileOUTgraph="multiChIPmix-results.pdf")
+multiChIPmixHMM(files=c("data1.txt","data2.txt"),init.by.PCA=TRUE,alpha=0.01,proba=0.5,save=TRUE,fileOUT="multiChIPmix-results.txt",fileOUTgraph="multiChIPmix-results.pdf")
 }
 
 \arguments{
 \item{files}{vector of the names of the input data files corresponding to the replicates. Each file has exactly 3 columns named ID, INPUT and IP (ID=probe identifier, INPUT=log2(INPUT), IP=log2(IP))}
 \item{init.by.PCA}{Initialisation of the EM algorithm. If TRUE, initialisation is done by PCA and randomly otherwise (default value = TRUE)}
+\item{alpha}{level at which classification is done}
 \item{proba}{Proportions of each group}
 \item{save}{If TRUE, data results are saved in file fileOUT}
-\item{fileOUT}{name of the output data file with 7 columns (ID=probe identifier, INPUT.1 = log2(INPUT.Rep1), IP.1 = log2(IP.Rep1), INPUT.2 = log2(INPUT.Rep2), IP.2 = log2(IP.Rep2),tau = posterior probability, status = probe status, 1 if the probe is classified as enriched, i.e. tau>0.5, 0 otherwise}
+\item{fileOUT}{name of the output data file with 7 columns (ID=probe identifier, INPUT.1 = log2(INPUT.Rep1), IP.1 = log2(IP.Rep1), INPUT.2 = log2(INPUT.Rep2), IP.2 = log2(IP.Rep2),tau = posterior probability, status = probe status, 1 if the probe is classified as enriched, i.e. tau>=1-alpha, 0 otherwise}
 \item{fileOUTgraph}{name of the plot file}
 }
 
@@ -40,7 +41,7 @@ multiChIPmixHMM(files=c("data1.txt","data2.txt"),init.by.PCA=TRUE,proba=0.5,save
 \examples{
 data(dataHMM_Rep1)
 data(dataHMM_Rep2)
-multiChIPmixHMM(files=c(dataHMM_Rep1,dataHMM_Rep2),init.by.PCA=TRUE,proba=0.5,save=TRUE,fileOUT="multiChIPmixHMM-results.txt",fileOUTgraph="multiChIPmixHMM-results.pdf")
+multiChIPmixHMM(files=c(dataHMM_Rep1,dataHMM_Rep2),init.by.PCA=TRUE,alpha=0.01,proba=0.5,save=TRUE,fileOUT="multiChIPmixHMM-results.txt",fileOUTgraph="multiChIPmixHMM-results.pdf")
 }
 
 \author{ C. Berard, caroline.berard@agroparistech.fr }
