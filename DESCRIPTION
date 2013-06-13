@@ -1,6 +1,6 @@
 Package: MultiChIPmixHMM
-Version: 3.0
-Date: 2013-01-07
+Version: 4.0
+Date: 2013-06-13
 Title: MultiChIPmixHMM
 Depends: R (>= 2.0.0)
 Author: Caroline Berard
@@ -9,7 +9,7 @@ Description: Linear regression mixture model to ChIP-chip data
         analysis, taking into account the dependence (HMM), and for
         multiple biological samples.
 License: GPL
-URL: http://test.test.fr
-Packaged: 2013-02-04 09:25:20 UTC; bioinfo
+Packaged: 2013-06-14 07:31:00 UTC; caro
+NeedsCompilation: yes
 Repository: CRAN
-Date/Publication: 2013-02-04 22:09:46
+Date/Publication: 2013-06-14 10:54:37

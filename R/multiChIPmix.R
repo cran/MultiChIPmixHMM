@@ -1,13 +1,15 @@
-multiChIPmix<-function(files=c("data1.txt","data2.txt"),init.by.PCA=TRUE,alpha=0.01,FDRBH=FALSE,proba=0.5,save=TRUE,fileOUT="multiChIPmix-results.txt",fileOUTgraph="multiChIPmix-results.pdf")
+multiChIPmix<-function(files=c("data1.txt","data2.txt"),init.by.PCA=TRUE,alpha=0.01,proba=0.5,eps=1e-06,fileOUT="multiChIPmix-results.txt",fileOUTgraph="multiChIPmix-results.pdf")
   {
 
      # data reading
    if (is.character(files)) {
         data <-read.table(files[1],header=TRUE)
+	stopifnot(c("ID","INPUT","IP")%in% names(data))
 	nb.samples<-length(files)
     }
     else {
 	files = as.data.frame(files)
+	stopifnot(c("ID","INPUT","IP")%in% names(files))
         data <- data.frame(ID=files$ID,INPUT=files$INPUT,IP=files$IP)
 	nb.samples<-length(files)/3
     }
@@ -64,7 +66,7 @@ multiChIPmix<-function(files=c("data1.txt","data2.txt"),init.by.PCA=TRUE,alpha=0
     
     #linear regression with 2 components in the mixture
     
-    out2<-.EMmultiChIPmix(data,nb.samples,proba,intercept,slope,sd=rep(1,nb.samples),stop.crit=1e-6,max.iter=1000)
+    out2<-.EMmultiChIPmix(data,nb.samples,proba,intercept,slope,sd=rep(1,nb.samples),stop.crit=eps,max.iter=1000)
     ## analysis per replicat
     #intersection coordinates of the 2 lines (eq. (a0-a1)/(b1-b0))
     abs = (out2$a[1,]-out2$a[2,])/(out2$slope[2,]-out2$slope[1,])
@@ -147,6 +149,7 @@ multiChIPmix<-function(files=c("data1.txt","data2.txt"),init.by.PCA=TRUE,alpha=0
 	}
         print(parmat)
         cat("\n")
+	return(out1[,1:3])
       }
 
    #Selected model with two populations     
@@ -188,20 +191,12 @@ multiChIPmix<-function(files=c("data1.txt","data2.txt"),init.by.PCA=TRUE,alpha=0
         cat("Enriched probability \n")
         print(out2$proba.pi)
         cat("\n")
-        
-	if (FDRBH==TRUE)
-	{
-		## Pvalue
-		FDR.BH<-p.adjust(posterior.proba,"BH")
-		status=as.numeric(FDR.BH<=alpha)
- 	
- 	       results<-data.frame(data,tau,fp.risk=posterior.proba, FDR.BH, status)
-	} else {
-	    status=as.numeric(tau>=1-alpha)
-	    results<-data.frame(data,tau,status)	
-	}
+       
+        status=as.numeric(tau>=1-alpha)
+	results<-data.frame(data,tau,status)	
+	
 
-	       if(save)
+	  if(!is.null(fileOUT))
           {
             cat("data results are saved in the file", fileOUT,"\n")
             write.table(results,file=fileOUT,row.names=FALSE,sep="\t")
@@ -225,8 +220,8 @@ multiChIPmix<-function(files=c("data1.txt","data2.txt"),init.by.PCA=TRUE,alpha=0
 	    cat("graphs are saved in the file", fileOUTgraph,"\n")
           }
 
-         
-
-        invisible(results)
+	res = list(out=out2,status=status)
+	return(res)
+        #invisible(results)
       }
   }

@@ -1,0 +1,26 @@
+\begin{thebibliography}{1}
+
+\bibitem{Dempster}
+A.~P. Dempster, N.~M. Laird, and D.~B. Rubin.
+\newblock Maximum likelihood from incomplete data via the em algorithm.
+\newblock {\em Journal of the royal statistical society, series B},
+  39(1):1--38, 1977.
+
+\bibitem{ChIPmix}
+M.L. Martin-Magniette, T.~Mary-Huard, C.~B\'erard, and S.~Robin.
+\newblock Chipmix: mixture model of regressions for two-color chip-chip
+  analysis.
+\newblock {\em Bioinformatics}, 24:i181--i186, 2008.
+
+\bibitem{Rabiner}
+L.R. Rabiner.
+\newblock A tutorial on hidden markov models and selected applications in
+  speech recognition.
+\newblock pages 257--286, 1989.
+
+\bibitem{BIC}
+G.~Schwarz.
+\newblock Estimating the dimension of a model.
+\newblock {\em Annals of Statistics 6}, pages 461--464, 1978.
+
+\end{thebibliography}

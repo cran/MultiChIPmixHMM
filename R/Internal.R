@@ -31,7 +31,7 @@
   ## __________________________________________________________
   ##
 
-.EMmultiChIPmix<-function(data,nb.samples,proba,intercept,slope,sd,stop.crit=1e-8,max.iter=1000)
+.EMmultiChIPmix<-function(data,nb.samples,proba,intercept,slope,sd,stop.crit,max.iter=1000)
  {
    variance<-numeric(nb.samples)
    eps.tau<-1e-16
@@ -114,7 +114,7 @@
   ## __________________________________________________________
   ##
 
-.EMmultiChIPmixHMM<-function(data,nb.samples,proba,intercept,slope,sd,n,stop.crit=1e-8,max.iter=1000)
+.EMmultiChIPmixHMM<-function(data,nb.samples,proba,intercept,slope,sd,n,stop.crit,max.iter=1000)
   {
     variance<-numeric(nb.samples)
     eps.tau<-1e-16
@@ -133,7 +133,7 @@
 #    tau1<-rep(proba,nrow(data))
 #    tau = cbind(tau0,tau1)
 #initialisation of transition matrix
-    Mat.trans.norm = matrix(0.5,nrow=2,ncol=2)
+    Mat.trans.norm = matrix(c(proba,1-proba,1-proba,proba),nrow=2,ncol=2,byrow=TRUE)
   
 #initialisation of stationnary distribution
     val.propre = round(eigen(t(Mat.trans.norm))$values,3)
@@ -230,9 +230,49 @@
     standard.error<-sd
     names(standard.error)<-paste("replicat",1:nb.samples,sep=".")
 
-    out<-list(proba.pi=proba,a=a,slope=slope,standard.error=sd,tau=tau)
+    out<-list(proba.pi=proba,a=a,slope=slope,standard.error=sd,tau=tau,Mat.trans=Mat.trans.norm)
 
 }
 
+
+  ## __________________________________________________________
+  ##
+  ## .makeRegions
+  ##
+  ## __________________________________________________________
+  ##
+
+.makeRegions = function(fileIN="multiChIPmixHMM-results.txt", gap=1)
+{
+
+data=read.table(fileIN,header=TRUE)
+
+x=which(diff(which(data$status==1))<(gap+2))
+y=which(data$status==1)[x]
+z=which(data$status==1)[x+1]
+
+a=unique(sort(c(y,z)))
+b=diff(a)
+
+pos.start=pos.stop=c()
+pos=0
+i=1
+while(i <= length(b))
+{
+   if(b[i]==1)
+   {
+	pos=pos+1
+	pos.start[pos]=a[i]
+	i=i+1
+	while(b[i]<(gap+1) & i<=length(b) )
+	{ i= i+1}
+	pos.stop[pos]=a[i]
+   }
+   i = i + 1
+}
+
+regions = data.frame(start=data$ID[pos.start], stop=data$ID[pos.stop])
+write.table(regions, file="regions.txt", row.names=FALSE, sep="\t")
+}
 
 

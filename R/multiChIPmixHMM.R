@@ -1,13 +1,15 @@
-multiChIPmixHMM<-function(files=c("data1.txt","data2.txt"),init.by.PCA=TRUE,alpha=0.01,proba=0.5,save=TRUE,fileOUT="multiChIPmix-results.txt",fileOUTgraph="multiChIPmix-results.pdf")
+multiChIPmixHMM<-function(files=c("data1.txt","data2.txt"),init.by.PCA=TRUE,alpha=0.01,proba=0.5,eps=1e-06,fileOUT="multiChIPmixHMM-results.txt",fileOUTgraph="multiChIPmixHMM-results.pdf")
   {
 
     # data reading
    if (is.character(files)) {
         data <-read.table(files[1],header=TRUE)
+	stopifnot(c("ID","INPUT","IP")%in% names(data))
 	nb.samples<-length(files)
     }
     else {
 	files = as.data.frame(files)
+	stopifnot(c("ID","INPUT","IP")%in% names(files))
         data <- data.frame(ID=files$ID,INPUT=files$INPUT,IP=files$IP)
 	nb.samples<-length(files)/3
     }
@@ -64,7 +66,7 @@ multiChIPmixHMM<-function(files=c("data1.txt","data2.txt"),init.by.PCA=TRUE,alph
     
     #linear regression with 2 components in the mixture
     
-    out2<-.EMmultiChIPmixHMM(data,nb.samples,proba,intercept,slope,sd=rep(1,nb.samples),n,stop.crit=1e-6,max.iter=1000)
+    out2<-.EMmultiChIPmixHMM(data,nb.samples,proba,intercept,slope,sd=rep(1,nb.samples),n,stop.crit=eps,max.iter=1000)
     abs = (out2$a[1,]-out2$a[2,])/(out2$slope[2,]-out2$slope[1,])
     swap<-0
     INPUTindex<-matrix(0,nrow=n,ncol=nb.samples)
@@ -144,6 +146,7 @@ multiChIPmixHMM<-function(files=c("data1.txt","data2.txt"),init.by.PCA=TRUE,alph
 	}
         print(parmat)
         cat("\n")
+	return(out1[,1:3])
       }
 
    #Selected model with two populations     
@@ -185,14 +188,17 @@ multiChIPmixHMM<-function(files=c("data1.txt","data2.txt"),init.by.PCA=TRUE,alph
         cat("Enriched probability \n")
         print(out2$proba.pi)
         cat("\n")
-       
+        cat("Transition Matrix \n")
+        print(out2$Mat.trans)
+        cat("\n")
+
 
 	tau=exp(log.tau)
 	status=0*numeric(length(tau));
         index<-which(tau>=1-alpha)
         status[index]<-1
         results<-data.frame(data,tau,status)
-        if(save)
+        if(!is.null(fileOUT))
           {
             cat("data results are saved in the file", fileOUT,"\n")
             write.table(results,file=fileOUT,row.names=FALSE,sep="\t")
@@ -214,6 +220,8 @@ multiChIPmixHMM<-function(files=c("data1.txt","data2.txt"),init.by.PCA=TRUE,alph
             dev.off()
 	    cat("graphs are saved in the file", fileOUTgraph,"\n")
           }
-        invisible(results)
+        #invisible(results)
+	res = list(out=out2,status=status)
+	return(res)
       }
   }

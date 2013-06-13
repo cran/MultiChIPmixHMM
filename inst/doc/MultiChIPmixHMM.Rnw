@@ -1,0 +1,185 @@
+%\VignetteIndexEntry{MultiChIPmixHMM Vignette}
+%\VignetteKeyword{ChIP-chip data analysis}
+%\VignettePackage{MultiChIPmixHMM}
+\documentclass[12pt,utf8x]{article}
+
+\SweaveOpts{eps=FALSE,echo=TRUE,png=TRUE,pdf=FALSE,figs.only=TRUE}
+\usepackage{times}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage[colorlinks=TRUE,urlcolor=blue,citecolor=blue]{hyperref}
+\usepackage{subfigure}
+\usepackage{amsmath}
+
+
+\newcommand{\Rfunction}[1]{{\texttt{#1}}}
+\newcommand{\Robject}[1]{{\texttt{#1}}}
+\newcommand{\Rpackage}[1]{{\textit{#1}}}
+\newcommand{\Rmethod}[1]{{\texttt{#1}}}
+\newcommand{\Rfunarg}[1]{{\texttt{#1}}}
+\newcommand{\Rclass}[1]{{\textit{#1}}}
+\newcommand{\Rcode}[1]{{\texttt{#1}}}
+\newcommand{\software}[1]{\textsf{#1}}
+\newcommand{\R}{\software{R}}
+\newcommand{\MultiChIPmixHMM}{\Rpackage{MultiChIPmixHMM}}
+
+
+\textwidth=6.2in
+\textheight=8.5in
+\oddsidemargin=0.2in
+\evensidemargin=0.2in
+\headheight=0in
+\headsep=0in
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Potential things to add:
+%% IDD, IDR, Venn diagram?
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\begin{document}
+
+\title{MultiChIPmixHMM: ChIP-chip data analysis modeling spatial dependencies and multiple replicates}
+\author{Caroline B\'erard}
+\date{Modified: June 13, 2013.   Compiled: \today}
+\maketitle
+
+<<echo=FALSE>>=
+options(width=60)
+@ 
+
+\begin{abstract}
+This vignette illustrates the use of the \texttt{MultiChIPmixHMM} package to analyse data from ChIP-chip experiments. Based on a mixture model of regressions, we propose two methods to take into account or not dependencies between adjacent probes along the genome. It is also possible to analyse multiple replicates simultaneously. 
+\end{abstract}
+
+\tableofcontents
+
+%--------------------------------------------------
+\section{Introduction} \label{sec:intro}
+%--------------------------------------------------
+ 
+Chromatin immunoprecipitation coupled with hybridization to a tiling array (ChIP-chip) is a cost-effective and routinely used method for identifying target genes of transcription factors, for analyzing histone modifications or for studying the methylome on a genome-wide scale. In a ChIP-chip experiment, a chromatin immunoprecipitation sample (IP) is compared against a reference sample of genomic DNA (Input). 
+
+The \texttt{MultiChIPmixHMM} package implements a linear regression mixture model, designed to perform a joint modeling of IP and Input measurements. This two-component mixture model discriminates the population of enriched probes from non-enriched ones. Moreover, this package enabling modeling of spatial dependencies and a simultaneous analysis of replicates to further improve the identification of enriched probes. 
+
+
+%--------------------------------------------------
+\section{Model} \label{sec:model}
+%--------------------------------------------------
+
+
+The method is based on a mixture model of regressions \cite{ChIPmix}. To be specific, let $(x_t,Y_t)$ be the log-Input and log-IP intensities of probe $t$,
+respectively. The (unknown) status of the probe is characterized through a label $Z_t$ which is 1 if the probe is enriched and 0 if
+it is normal (not enriched). We assume the Input-IP relationship to be linear whatever the population, but with different parameters. More precisely, we have:
+\begin{eqnarray*}
+Y_{t} & \sim & \mathcal{N}(a_{0} + b_{0}x_{t}\;,\; \sigma^2) \qquad \mbox{ if } Z_{t}=0 \text{ (normal probe)} \\
+Y_{t} & \sim & \mathcal{N}(a_{1} + b_{1}x_{t}\;,\; \sigma^2) \qquad \mbox{ if } Z_{t}=1 \text{ (enriched probe)}
+\end{eqnarray*} 
+
+The \texttt{MultiChIPmixHMM} R package presents two different functions based on this model:
+\begin{itemize}
+\item The first function (\texttt{multiChIPmix}) allows us to analyse one sample, with a generalization to simultaneously analyse multiple biological replicates;
+\item The second function (\texttt{multiChIPmixHMM}) takes into account the spatial dependence between neighboring probes with a hidden Markov model, and also makes it possible to analyse multiple biological replicates.
+\end{itemize}
+
+To account for the dependence between adjacent probes, we assume that the latent variable $\{Z_t\}$ is a first order Markov chain.\\
+To simultaneously analyse multiple biological replicates, we note $(x_{tr},Y_{tr})$ the log-Input and log-IP intensities of probe $t$ for the replicate $r$. For each biological replicate $r$, the model is the following:
+\begin{eqnarray*}
+Y_{tr} & \sim & \mathcal{N}(a_{0r} + b_{0r}x_{tr}\;,\; \sigma^2_r) \qquad \mbox{ if the probe is normal} \\
+Y_{tr} & \sim & \mathcal{N}(a_{1r} + b_{1r}x_{tr}\;,\; \sigma^2_r) \qquad \mbox{ if the probe is enriched}
+\end{eqnarray*} 
+The replicates are assumed to be independent. This model makes it possible to determine a single status by probe for all replicates.
+
+The marginal distribution of $\log(Y)$ for a given $\log(x)$ is:
+ \begin{equation*}
+  (1-p) \prod_r f_{0r}\{\log(Y_r) | \log(x_r)\} + p \prod_r f_{1r}\{\log(Y_r) | \log(x_r)\}\ ,
+ \end{equation*}
+where $f_{jr}$ stands for the probability density function of a Gaussian distribution with mean $a_{jr}+b_{jr}\log(x_r)$ and variance $\sigma^{2}_{r}$. \\
+
+
+%\subsection{Inference}
+
+All parameters of the HMM are estimated using the Baum-Welch algorithm \cite{Rabiner} representing a special case of the EM algorithm \cite{Dempster}. To obtain relevant initial values of the mixture parameters, we applied a Principal Component Analysis to each biological replicate  and used the first axis to derive the intercept and slope of the regression.  \\
+Identification of enriched probes is based on conditional probabilities. A probe is declared enriched if its enriched conditional probability (state-posterior probability of the enriched state) is higher than $1-\alpha$, where $\alpha$ is chosen by the user. \\
+
+The mixture model with two linear regressions is adapted if there are two populations. But if there is no enriched probes in the dataset, there is only one population to find. In order to choose between one or two populations, a linear regression mixture model is applied with one and two components, and the best model is selected with BIC criterion \cite{BIC}.
+
+ 
+
+
+
+
+%--------------------------------------------------
+\section{ChIP-chip dataset analysis} \label{sec:analyse}
+%--------------------------------------------------
+ 
+To begin, we load the package:
+ 
+<<loadparameters>>=  
+library(MultiChIPmixHMM)
+@
+
+The input data can be either a file or a RData object. Each file/object must have exactly 3 columns named ID, INPUT and IP (ID=probe identifier, INPUT=log2(INPUT), IP=log2(IP)). The field separator character is tabs if input data files are used. \\
+For example, we load the datasets provided in the package, which is a small toy example:
+
+<<loaddata>>=  
+data(data_Rep1)
+data(data_Rep2)
+head(data_Rep1)
+@
+
+We have now to choose if we want to take into account the dependence between neighboring probes. \\
+If yes, the data have to be ordered according to the position of the probes, and we use the \texttt{multiChIPmixHMM} function: \\
+
+<<multiChIPmixHMM, eval=FALSE>>=  
+res = multiChIPmixHMM(files=c(data_Rep1,data_Rep2),init.by.PCA=TRUE,
+alpha=0.01,proba=0.5,eps=1e-06,fileOUT="multiChIPmixHMM-results.txt",
+fileOUTgraph="multiChIPmixHMM-results.pdf")
+@
+
+If not, we use the \texttt{multiChIPmix} function: \\
+
+<<multiChIPmix, eval=FALSE>>=  
+res = multiChIPmix(files=c(data_Rep1,data_Rep2),init.by.PCA=TRUE,
+alpha=0.01,proba=0.5,eps=1e-06,fileOUT="multiChIPmix-results.txt",
+fileOUTgraph="multiChIPmix-results.pdf")
+@
+
+The parameter \texttt{files} is a vector of the names of the replicates. The size of the vector corresponds to the number of replicates. If you want to load .txt files instead of RData objects, you have to write : \texttt{files=c("data1.txt","data2.txt")}. \\
+
+After that, we obtain the values of the estimated parameters (displayed on the screen and also available in the \texttt{res\$out} object), a .pdf graph showing the probe classification and the regression lines for each replicate, and a .txt file containing the output informations, that is the ID, the INPUT and IP values, the posterior probabilities and the predicted status for each probe. \\
+
+If we want to directly plot the graph (for the replicate 1 for example), the command lines are:
+
+<<graph, eval=FALSE>>=  
+couleur = c()
+couleur[res$status == 1] = "red" 
+couleur[res$status == 0] = "black" 
+rep=1
+
+plot(data_Rep1$INPUT,data_Rep1$IP,xlab="INPUT",ylab="IP",col=couleur)
+x<-seq(min(data_Rep1$INPUT),max(data_Rep1$INPUT),length=100)
+lines(x,y=res$out$a[1,rep]+res$out$slope[1,rep]*x,col="blue",lwd=2)
+lines(x,y=res$out$a[2,rep]+res$out$slope[2,rep]*x,col="red",lwd=2)
+@
+
+In order to concatenate adjacent probes with the same status into regions, we can use the \texttt{makeRegions} function. The first argument of the function is a file with a column named ID (for the probe identifier) and a column named status for the status of each probe. The second argument is the gap parameter, which corresponds to the number of probes with status "normal" allowed between two probes with status "enriched". It returns a file named "regions.txt" with the detected enriched regions. Each region is defined by the ID of the first and last probes covering the region.
+
+
+<<regions, eval=FALSE>>=  
+makeRegions(fileIN="multiChIPmixHMM-results.txt", gap=1)
+@
+
+
+%--------------------------------------------------
+\section{Session Info}
+%--------------------------------------------------
+<<sessionInfo>>=
+sessionInfo()
+@ 
+
+
+
+\bibliographystyle{plain}  			% Style BST file
+\bibliography{vignette_refs}    	% Bibliography file (usually '*.bib' ) 
+
+\end{document}
