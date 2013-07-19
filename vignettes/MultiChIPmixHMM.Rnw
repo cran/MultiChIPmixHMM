@@ -40,7 +40,7 @@
 
 \title{MultiChIPmixHMM: ChIP-chip data analysis modeling spatial dependencies and multiple replicates}
 \author{Caroline B\'erard}
-\date{Modified: June 13, 2013.   Compiled: \today}
+\date{Modified: July 19, 2013.   Compiled: \today}
 \maketitle
 
 <<echo=FALSE>>=
@@ -162,11 +162,12 @@ lines(x,y=res$out$a[1,rep]+res$out$slope[1,rep]*x,col="blue",lwd=2)
 lines(x,y=res$out$a[2,rep]+res$out$slope[2,rep]*x,col="red",lwd=2)
 @
 
-In order to concatenate adjacent probes with the same status into regions, we can use the \texttt{makeRegions} function. The first argument of the function is a file with a column named ID (for the probe identifier) and a column named status for the status of each probe. The second argument is the gap parameter, which corresponds to the number of probes with status "normal" allowed between two probes with status "enriched". It returns a file named "regions.txt" with the detected enriched regions. Each region is defined by the ID of the first and last probes covering the region.
+In order to concatenate adjacent probes with the same status into regions, we can use the \texttt{makeRegions} function. The first argument of the function is a file with a column named ID (for the probe identifier) and a column named status for the status of each probe. The second argument is the gap parameter, which corresponds to the number of probes with status "normal" allowed between two probes with status "enriched". It returns a file with the detected enriched regions. Each region is defined by the ID of the first and last probes covering the region.
 
 
 <<regions, eval=FALSE>>=  
-makeRegions(fileIN="multiChIPmixHMM-results.txt", gap=1)
+makeRegions(fileIN="multiChIPmixHMM-results.txt", 
+fileOUT="regions.txt", gap=1)
 @
 
 
